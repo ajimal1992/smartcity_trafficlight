@@ -7,8 +7,7 @@ Trafficlight trafficlight1(4,5,6);
 Trafficlight trafficlight2(9,10,11);
 
 void setup(){
-
-
+    Serial.begin(115200);
 }
 
 void loop(){
@@ -57,18 +56,24 @@ void changePriority(bool road)
     if(road){
         trafficlight2.clear();
         trafficlight2.ready();
+        Serial.println("1a,2b");
         delay(1000);
         trafficlight2.stop();
+        Serial.println("1a,1b");
         delay(500);
         trafficlight1.go();
+        Serial.println("3a,1b");
     }
 
     else{
         trafficlight1.clear();
         trafficlight1.ready();
+        Serial.println("2a,1b");
         delay(1000);
         trafficlight1.stop();
+        Serial.println("1a,1b");
         delay(500);
         trafficlight2.go();
+        Serial.println("1a,3b");
     }
 }
