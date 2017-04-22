@@ -2,7 +2,7 @@
 
 #define TRAFFIC_DURATION 5000
 
-int trigger_pin = 46;
+int trigger_pin = 2;
 Trafficlight trafficlight1(4,5,6);
 Trafficlight trafficlight2(9,10,11);
 
