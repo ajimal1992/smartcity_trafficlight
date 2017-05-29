@@ -1,80 +1,75 @@
 #include "trafficlight.h"
 
-#define TRAFFIC_DURATION 5000
-
 int trigger_pin = 2;
-Trafficlight trafficlight1(4,5,6);
-Trafficlight trafficlight2(9,10,11);
+Trafficlight trafficlight1(4,5,6); //ambulance trafficlight
+Trafficlight trafficlight2(9,10,11); 
+
+char timerCount = 0; //Used to extend the duration of timer
 
 void setup(){
     Serial.begin(115200);
+    
+    //setup switch interrupt
+    pinMode(trigger_pin,INPUT);
+    attachInterrupt(digitalPinToInterrupt(trigger_pin),switchISR,RISING);
+    
+    //setup initial states
+    trafficlight1.clear();
+    trafficlight1.stop();
+    trafficlight2.clear();
+    trafficlight2.go();
+    
+    //set up timer interrupt
+    cli();          // disable global interrupts
+    TCCR1A = 0;     // clear ctrl register A
+    TCCR1B = 0;     // clear ctrl register B
+    OCR1A = 31249;  //set capture at every 0.5sec.
+    TCCR1B |= (1 << WGM12);  //set capture mode
+    TCCR1B |= (1 << CS12);   //256 prescale
+    sei();          // enable global interrupts
+    
 }
 
 void loop(){
-    static bool road = 0;
-    static unsigned long previousTime = 5000;
-    static int traffic_delay = 5000;
-    static bool is_triggered;
+    //empty loop.
+}
 
-    is_triggered = digitalRead(trigger_pin);
-
-    if(is_triggered){
-        if(road == 0)
-        {
-           traffic_delay = 20000; 
-        }
-        else if(road == 1)
-        {
-            traffic_delay = 500;
-        }
-	Serial.println("b1t");
-    }        
-    
-
-    //TODO: create an interrupt to change traffic_delay and 
-    //change priority to ambulance lane
-
-    if((millis() - previousTime) > traffic_delay ){
-        if(!is_triggered)
-        {
-           changePriority(road);
-            //reset to normal traffic
-            traffic_delay = TRAFFIC_DURATION;
-            road = !road;
-        }
-        else if(is_triggered)
-        {
-            traffic_delay = 10000;
-        }
-        previousTime = millis();
+void switchISR(){
+    if(timerCount==0){
+     	Serial.println("b1t"); 
+     	TIMSK1 |= (1 << OCIE1A); //enable timer interrupt    
     }
 }
 
-
-void changePriority(bool road)
-{
-    //ambulance lane
-    if(road){
-        trafficlight2.clear();
+ISR(TIMER1_COMPA_vect){
+    if(timerCount == 0){
+    	trafficlight2.clear();
         trafficlight2.ready();
         Serial.println("1a2b");
-        delay(1000);
-        trafficlight2.stop();
-        Serial.println("1a1b");
-        delay(500);
-        trafficlight1.go();
-        Serial.println("3a1b");
     }
-
-    else{
-        trafficlight1.clear();
+    else if(timerCount == 2){ //1000 ms
+    	trafficlight2.stop();
+        Serial.println("1a1b");
+    }
+    else if(timerCount == 3){ //1500 ms
+    	trafficlight1.go();
+    	Serial.println("3a1b");
+    }
+    else if(timerCount == 13){//6500 ms
+    	trafficlight1.clear();
         trafficlight1.ready();
         Serial.println("2a1b");
-        delay(1000);
-        trafficlight1.stop();
-        Serial.println("1a1b");
-        delay(500);
-        trafficlight2.go();
-        Serial.println("1a3b");
     }
+    else if(timerCount == 15){//7500 ms
+    	trafficlight1.stop();
+        Serial.println("1a1b");
+    }
+    else if(timerCount == 16){//8000 ms
+    	trafficlight2.go();
+        Serial.println("1a3b");
+        timerCount = -1;
+        TIMSK1 &= ~(1 << OCIE1A);
+    }
+    timerCount ++;
 }
+
