@@ -7,4 +7,4 @@ To upload your codes into your arduino,
 cd firmware
 platformio run --target upload
 ```
-**`rtiFirmware/` is still under development.
+**`rtiFirmware/` is still under development.**
